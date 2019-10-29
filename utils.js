@@ -76,7 +76,8 @@ const createLambda = async ({
   zipPath,
   bucket,
   role,
-  layer
+  layer,
+  vpcConfig
 }) => {
   const params = {
     FunctionName: name,
@@ -90,7 +91,8 @@ const createLambda = async ({
     Timeout: timeout,
     Environment: {
       Variables: env
-    }
+    },
+    VpcConfig : vpcConfig
   }
 
   if (layer && layer.arn) {
@@ -119,7 +121,8 @@ const updateLambdaConfig = async ({
   env,
   description,
   role,
-  layer
+  layer,
+  vpcConfig
 }) => {
   const functionConfigParams = {
     FunctionName: name,
@@ -131,7 +134,8 @@ const updateLambdaConfig = async ({
     Timeout: timeout,
     Environment: {
       Variables: env
-    }
+    },
+    VpcConfig : vpcConfig
   }
 
   if (layer && layer.arn) {
