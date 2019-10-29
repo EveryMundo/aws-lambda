@@ -1,6 +1,6 @@
 {
-  "name": "@serverless/aws-lambda",
-  "version": "3.0.0",
+  "name": "@everymundo/aws-lambda-serverless-component",
+  "version": "1.0.0",
   "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
@@ -9,7 +9,7 @@
     "test": "jest",
     "lint": "eslint . --fix --cache"
   },
-  "author": "Serverless, Inc.",
+  "author": "Everymundo - fork from Serverless, Inc.",
   "license": "Apache",
   "dependencies": {
     "@serverless/aws-iam-role": "^1.0.0",
