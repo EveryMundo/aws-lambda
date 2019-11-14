@@ -196,6 +196,36 @@ class AwsLambda extends Component {
     return { version: Version }
   }
 
+  async createAlias({alias, version}) {
+
+    const { name, region } = this.state
+    
+    const lambda = new AwsSdkLambda({
+      region,
+      credentials: this.context.credentials.aws
+    })
+
+    try {
+      await lambda
+      .createAlias({
+        FunctionName: name,
+        Name: alias,
+        FunctionVersion: version
+      })
+      .promise()
+    }
+    catch (e) {
+      if (e.code === 'ResourceConflictException') {
+        this.context.debug('Alias already exists. Cool.')
+        return;
+      }
+      // otherwise bounce
+      throw Error(e)
+    }
+
+   
+  }
+
   async remove() {
     this.context.status(`Removing`)
 

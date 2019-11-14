@@ -1,6 +1,6 @@
 {
   "name": "@everymundo/aws-lambda-serverless-component",
-  "version": "1.0.0",
+  "version": "1.0.8",
   "main": "./serverless.js",
   "publishConfig": {
     "access": "public"
