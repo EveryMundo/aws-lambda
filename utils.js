@@ -77,7 +77,8 @@ const createLambda = async ({
   bucket,
   role,
   layer,
-  vpcConfig
+  vpcConfig,
+  tracingConfig
 }) => {
   const params = {
     FunctionName: name,
@@ -92,7 +93,8 @@ const createLambda = async ({
     Environment: {
       Variables: env
     },
-    VpcConfig : vpcConfig
+    VpcConfig : vpcConfig,
+    TracingConfig : tracingConfig
   }
 
   if (layer && layer.arn) {

@@ -41,7 +41,11 @@ const defaults = {
   handler: 'handler.hello',
   runtime: 'nodejs12.x',
   env: {},
-  region: 'us-east-1'
+  region: 'us-east-1',
+  tracingConfig: {
+    Mode: 'PassThrough'
+  },
+ 
 }
 
 class AwsLambda extends Component {
