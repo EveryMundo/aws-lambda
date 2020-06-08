@@ -62,7 +62,8 @@ class AwsLambda extends Component {
 
     const lambda = new AwsSdkLambda({
       region: config.region,
-      credentials: this.context.credentials.aws
+      credentials: this.context.credentials.aws,
+      maxRetries: 10
     })
 
     const awsIamRole = await this.load('@serverless/aws-iam-role')
@@ -187,7 +188,8 @@ class AwsLambda extends Component {
 
     const lambda = new AwsSdkLambda({
       region,
-      credentials: this.context.credentials.aws
+      credentials: this.context.credentials.aws,
+      maxRetries: 10
     })
 
     const { Version } = await lambda
@@ -206,7 +208,8 @@ class AwsLambda extends Component {
     
     const lambda = new AwsSdkLambda({
       region,
-      credentials: this.context.credentials.aws
+      credentials: this.context.credentials.aws,
+      maxRetries: 10
     })
 
     try {
@@ -242,7 +245,8 @@ class AwsLambda extends Component {
 
     const lambda = new AwsSdkLambda({
       region,
-      credentials: this.context.credentials.aws
+      credentials: this.context.credentials.aws,
+      maxRetries: 10
     })
 
     const awsIamRole = await this.load('@serverless/aws-iam-role')
