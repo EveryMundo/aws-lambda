@@ -1,5 +1,6 @@
 const { tmpdir } = require('os')
 const path = require('path')
+const fs = require('fs');
 const archiver = require('archiver')
 const globby = require('globby')
 const { contains, isNil, last, split, equals, not, pick } = require('ramda')
@@ -8,6 +9,22 @@ const { utils } = require('@serverless/core')
 
 const VALID_FORMATS = ['zip', 'tar']
 const isValidFormat = (format) => contains(format, VALID_FORMATS)
+
+const getAllFiles = (dirPath, arrayOfFiles) => {
+  files = fs.readdirSync(dirPath);
+
+  arrayOfFiles = arrayOfFiles || [];
+
+  files.forEach((file) => {
+    if (fs.statSync(`${dirPath}/${file}`).isDirectory()) {
+      arrayOfFiles = getAllFiles(`${dirPath}/${file}`, arrayOfFiles);
+    } else {
+      arrayOfFiles.push(path.join(dirPath, '/', file));
+    }
+  });
+
+  return arrayOfFiles;
+};
 
 const packDir = async (inputDirPath, outputFilePath, include = [], exclude = [], prefix) => {
   const format = last(split('.', outputFilePath))
@@ -22,18 +39,22 @@ const packDir = async (inputDirPath, outputFilePath, include = [], exclude = [],
     exclude.forEach((excludedItem) => patterns.push(`!${excludedItem}`))
   }
 
-  const files = (await globby(patterns, { cwd: inputDirPath, dot: true }))
+  const files = getAllFiles(inputDirPath)
     .sort() // we must sort to ensure correct hash
     .map((file) => ({
-      input: path.join(inputDirPath, file),
-      output: prefix ? path.join(prefix, file) : file
-    }))
+      input: file,
+      output: file.replace(inputDirPath, ''),
+    }));
+
+  console.log(files);
 
   return new Promise((resolve, reject) => {
     const output = createWriteStream(outputFilePath)
     const archive = archiver(format, {
       zlib: { level: 9 }
     })
+
+
 
     output.on('open', () => {
       archive.pipe(output)
@@ -93,8 +114,8 @@ const createLambda = async ({
     Environment: {
       Variables: env
     },
-    VpcConfig : vpcConfig,
-    TracingConfig : tracingConfig
+    VpcConfig: vpcConfig,
+    TracingConfig: tracingConfig
   }
 
   if (layer && layer.arn) {
@@ -137,7 +158,7 @@ const updateLambdaConfig = async ({
     Environment: {
       Variables: env
     },
-    VpcConfig : vpcConfig
+    VpcConfig: vpcConfig
   }
 
   if (layer && layer.arn) {
