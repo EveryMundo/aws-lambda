@@ -39,7 +39,7 @@ const defaults = {
   bucket: undefined,
   shims: [],
   handler: 'handler.hello',
-  runtime: 'nodejs12.x',
+  runtime: 'nodejs14.x',
   env: {},
   region: 'us-east-1',
   tracingConfig: {
