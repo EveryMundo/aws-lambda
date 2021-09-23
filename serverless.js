@@ -10,7 +10,8 @@ const {
   getLambda,
   deleteLambda,
   configChanged,
-  pack
+  pack,  
+  waitingForLambdaToBeUpdated 
 } = require('./utils')
 
 const outputsList = [
@@ -45,12 +46,12 @@ const defaults = {
   tracingConfig: {
     Mode: 'PassThrough'
   },
- 
+
 }
 
 class AwsLambda extends Component {
   async default(inputs = {}) {
-    this.context.status(`Deploying`)
+    this.context.status(`Deploying`);
 
     const config = mergeDeepRight(defaults, inputs)
 
@@ -126,46 +127,40 @@ class AwsLambda extends Component {
     }
 
     const prevLambda = await getLambda({ lambda, ...config })
+    this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)
 
     if (!prevLambda) {
       if (config.bucket) {
-        this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)
-        this.context.status(`Uploading`)
-
+        this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)   
         await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
       }
 
-      this.context.status(`Creating`)
       this.context.debug(`Creating lambda ${config.name} in the ${config.region} region.`)
-
       const createResult = await createLambda({ lambda, ...config })
       config.arn = createResult.arn
       config.hash = createResult.hash
     } else {
       config.arn = prevLambda.arn
-
       if (configChanged(prevLambda, config)) {
         if (config.bucket && prevLambda.hash !== config.hash) {
-          this.context.status(`Uploading code`)
           this.context.debug(`Uploading ${config.name} lambda code to bucket ${config.bucket}.`)
-
           await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
           await updateLambdaCode({ lambda, ...config })
         } else if (!config.bucket && prevLambda.hash !== config.hash) {
-          this.context.status(`Uploading code`)
           this.context.debug(`Uploading ${config.name} lambda code.`)
           await updateLambdaCode({ lambda, ...config })
         }
-
-        this.context.status(`Updating`)
-        this.context.debug(`Updating ${config.name} lambda config.`)
-
-        const updateResult = await updateLambdaConfig({ lambda, ...config })
-        config.hash = updateResult.hash
+        this.context.debug(`Waiting to update config for ${config.name}`);
+        const { LastUpdateStatus } = await waitingForLambdaToBeUpdated({ lambda, ...config });
+        if ( LastUpdateStatus === 'Successful') {         
+          const updateResult = await updateLambdaConfig({ lambda, ...config });
+          this.context.debug(`Lambda config for ${config.description} updated.`);
+          config.hash = updateResult.hash
+        }
       }
     }
 
-    // todo we probably don't need this logic now thatt we auto generate names
+    // todo we probably don't need this logic now that we auto generate names
     if (this.state.name && this.state.name !== config.name) {
       this.context.status(`Replacing`)
       await deleteLambda({ lambda, name: this.state.name })
@@ -176,15 +171,14 @@ class AwsLambda extends Component {
     )
 
     const outputs = pick(outputsList, config)
-
     this.state = outputs
     await this.save()
-
     return outputs
   }
 
   async publishVersion() {
     const { name, region, hash } = this.state
+    let version = '';
 
     const lambda = new AwsSdkLambda({
       region,
@@ -192,20 +186,18 @@ class AwsLambda extends Component {
       maxRetries: 10
     })
 
-    const { Version } = await lambda
-      .publishVersion({
-        FunctionName: name,
-        CodeSha256: hash
-      })
-      .promise()
-
-    return { version: Version }
+    const { LastUpdateStatus } = await waitingForLambdaToBeUpdated({ lambda, name });   
+    if (LastUpdateStatus === 'Successful') {
+       const { Version } = await lambda.publishVersion({ FunctionName: name, CodeSha256: hash }).promise();
+       version = Version;
+    }
+    return { version }
   }
 
-  async createAlias({alias, version}) {
+  async createAlias({ alias, version }) {
 
     const { name, region } = this.state
-    
+
     const lambda = new AwsSdkLambda({
       region,
       credentials: this.context.credentials.aws,
@@ -214,12 +206,12 @@ class AwsLambda extends Component {
 
     try {
       await lambda
-      .createAlias({
-        FunctionName: name,
-        Name: alias,
-        FunctionVersion: version
-      })
-      .promise()
+        .createAlias({
+          FunctionName: name,
+          Name: alias,
+          FunctionVersion: version
+        })
+        .promise()
     }
     catch (e) {
       if (e.code === 'ResourceConflictException') {
@@ -229,8 +221,6 @@ class AwsLambda extends Component {
       // otherwise bounce
       throw Error(e)
     }
-
-   
   }
 
   async remove() {
@@ -263,7 +253,6 @@ class AwsLambda extends Component {
 
     this.state = {}
     await this.save()
-
     return outputs
   }
 }

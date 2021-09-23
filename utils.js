@@ -271,8 +271,15 @@ const pack = async (code, shims = [], packDeps = true) => {
       .toString(36)
       .substring(6)}.zip`
   )
-
   return packDir(code, outputFilePath, shims, exclude)
+}
+
+const waitingForLambdaToBeUpdated = async ({ lambda, name }) => {  
+  const params = {
+    FunctionName: name, 
+  };
+  const res = await lambda.waitFor('functionUpdated', params).promise();  
+  return res;
 }
 
 module.exports = {
@@ -284,5 +291,6 @@ module.exports = {
   getPolicy,
   getAccountId,
   configChanged,
-  pack
+  pack, 
+  waitingForLambdaToBeUpdated 
 }
