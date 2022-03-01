@@ -11,7 +11,7 @@ const {
   deleteLambda,
   configChanged,
   pack,  
-  waitingForLambdaToBeUpdated 
+  waitUntilReady
 } = require('./utils')
 
 const outputsList = [
@@ -134,11 +134,11 @@ class AwsLambda extends Component {
         this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)   
         await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
       }
-
       this.context.debug(`Creating lambda ${config.name} in the ${config.region} region.`)
       const createResult = await createLambda({ lambda, ...config })
       config.arn = createResult.arn
       config.hash = createResult.hash
+      await waitUntilReady(lambda, this.context, config.name);
     } else {
       config.arn = prevLambda.arn
       if (configChanged(prevLambda, config)) {
@@ -150,13 +150,18 @@ class AwsLambda extends Component {
           this.context.debug(`Uploading ${config.name} lambda code.`)
           await updateLambdaCode({ lambda, ...config })
         }
-        this.context.debug(`Waiting to update config for ${config.name}`);
-        const { LastUpdateStatus } = await waitingForLambdaToBeUpdated({ lambda, ...config });
-        if ( LastUpdateStatus === 'Successful') {         
+        await waitUntilReady(lambda, this.context, config.name);
+        try{
+          this.context.status(`Updating`);
+          this.context.debug(`Updating ${config.name} lambda config.`);
           const updateResult = await updateLambdaConfig({ lambda, ...config });
           this.context.debug(`Lambda config for ${config.description} updated.`);
-          config.hash = updateResult.hash
+          config.hash = updateResult.hash;
+          await waitUntilReady(lambda, this.context, config.name);
         }
+        catch(e){
+           console.error(e);
+        }        
       }
     }
 
@@ -177,21 +182,20 @@ class AwsLambda extends Component {
   }
 
   async publishVersion() {
-    const { name, region, hash } = this.state
-    let version = '';
-
+    const { name, region, hash } = this.state   
     const lambda = new AwsSdkLambda({
       region,
       credentials: this.context.credentials.aws,
       maxRetries: 10
-    })
-
-    const { LastUpdateStatus } = await waitingForLambdaToBeUpdated({ lambda, name });   
-    if (LastUpdateStatus === 'Successful') {
-       const { Version } = await lambda.publishVersion({ FunctionName: name, CodeSha256: hash }).promise();
-       version = Version;
+    })    
+    try{     
+      const { Version } = await lambda.publishVersion({ FunctionName: name, CodeSha256: hash }).promise();
+      return { version:Version };
     }
-    return { version }
+    catch(e){
+      console.error(`Error publishing ${name} - ${e.stack || e}`);
+      return { version:'' };
+    }    
   }
 
   async createAlias({ alias, version }) {
