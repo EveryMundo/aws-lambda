@@ -40,7 +40,7 @@ const defaults = {
   bucket: undefined,
   shims: [],
   handler: 'handler.hello',
-  runtime: 'nodejs16.x',
+  runtime: 'nodejs18.x',
   env: {},
   region: 'us-east-1',
   tracingConfig: {
@@ -99,7 +99,7 @@ class AwsLambda extends Component {
       const layerInputs = {
         description: `${config.name} Dependencies Layer`,
         code: path.join(config.code, 'node_modules'),
-        runtimes: ['nodejs10.x'],
+        runtimes: ['nodejs18.x'],
         prefix: 'nodejs/node_modules',
         bucket: config.bucket,
         region: config.region
