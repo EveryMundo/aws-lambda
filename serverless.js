@@ -41,6 +41,7 @@ const defaults = {
   shims: [],
   handler: 'handler.hello',
   runtime: 'nodejs18.x',
+  architecture: 'arm64',
   env: {},
   region: 'us-east-1',
   tracingConfig: {
