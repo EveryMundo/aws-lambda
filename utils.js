@@ -2,7 +2,6 @@ const { tmpdir } = require('os')
 const path = require('path')
 const fs = require('fs');
 const archiver = require('archiver')
-const globby = require('globby')
 const { contains, isNil, last, split, equals, not, pick } = require('ramda')
 const { readFile, createReadStream, createWriteStream } = require('fs-extra')
 const { utils } = require('@serverless/core')
@@ -92,6 +91,7 @@ const createLambda = async ({
   memory,
   timeout,
   runtime,
+  architecture,
   env,
   description,
   zipPath,
@@ -110,6 +110,7 @@ const createLambda = async ({
     Publish: true,
     Role: role.arn,
     Runtime: runtime,
+    Architectures:[architecture],
     Timeout: timeout,
     Environment: {
       Variables: env
@@ -141,6 +142,7 @@ const updateLambdaConfig = async ({
   memory,
   timeout,
   runtime,
+  architecture,
   env,
   description,
   role,
@@ -154,6 +156,7 @@ const updateLambdaConfig = async ({
     MemorySize: memory,
     Role: role.arn,
     Runtime: runtime,
+    Architectures:[architecture],
     Timeout: timeout,
     Environment: {
       Variables: env
