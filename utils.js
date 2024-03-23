@@ -141,8 +141,7 @@ const updateLambdaConfig = async ({
   handler,
   memory,
   timeout,
-  runtime,
-  architectures,
+  runtime, 
   env,
   description,
   role,
@@ -155,8 +154,7 @@ const updateLambdaConfig = async ({
     Handler: handler,
     MemorySize: memory,
     Role: role.arn,
-    Runtime: runtime,
-    Architectures:[...architectures],
+    Runtime: runtime,   
     Timeout: timeout,
     Environment: {
       Variables: env
