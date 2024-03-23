@@ -25,6 +25,7 @@ const outputsList = [
   'shims',
   'handler',
   'runtime',
+  'architectures',
   'env',
   'role',
   'layer',
@@ -41,7 +42,7 @@ const defaults = {
   shims: [],
   handler: 'handler.hello',
   runtime: 'nodejs18.x',
-  architecture: 'arm64',
+  architectures:["arm64"],
   env: {},
   region: 'us-east-1',
   tracingConfig: {
