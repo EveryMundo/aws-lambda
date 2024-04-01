@@ -171,10 +171,11 @@ const updateLambdaConfig = async ({
   return { arn: res.FunctionArn, hash: res.CodeSha256 }
 }
 
-const updateLambdaCode = async ({ lambda, name, zipPath, bucket }) => {
+const updateLambdaCode = async ({ lambda, name, zipPath, bucket, architectures }) => {
   const functionCodeParams = {
     FunctionName: name,
-    Publish: true
+    Publish: true,
+    architectures
   }
 
   if (bucket) {
