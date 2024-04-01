@@ -143,12 +143,12 @@ class AwsLambda extends Component {
       await waitUntilReady(lambda, this.context, config.name);
     } else {
       config.arn = prevLambda.arn
-      if (configChanged(prevLambda, config) || prevLambda.architectures[0] !== config.architectures[0]) {
-        if (config.bucket && prevLambda.hash !== config.hash) {
+      if (configChanged(prevLambda, config)) {
+        if ((prevLambda.architectures[0] !== config.architectures[0]) && config.bucket && prevLambda.hash !== config.hash) {
           this.context.debug(`Uploading ${config.name} lambda code to bucket ${config.bucket}.`)
           await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
           await updateLambdaCode({ lambda, ...config })
-        } else if (!config.bucket && prevLambda.hash !== config.hash) {
+        } else if ((prevLambda.architectures[0] !== config.architectures[0]) && (!config.bucket && prevLambda.hash !== config.hash)) {
           this.context.debug(`Uploading ${config.name} lambda code.`)
           await updateLambdaCode({ lambda, ...config })
         }
