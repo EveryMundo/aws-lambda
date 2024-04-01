@@ -175,7 +175,7 @@ const updateLambdaCode = async ({ lambda, name, zipPath, bucket, architectures }
   const functionCodeParams = {
     FunctionName: name,
     Publish: true,
-    architectures
+    Architectures:[...architectures]
   }
 
   if (bucket) {
