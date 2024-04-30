@@ -2,7 +2,6 @@ const { tmpdir } = require('os')
 const path = require('path')
 const fs = require('fs');
 const archiver = require('archiver')
-const globby = require('globby')
 const { contains, isNil, last, split, equals, not, pick } = require('ramda')
 const { readFile, createReadStream, createWriteStream } = require('fs-extra')
 const { utils } = require('@serverless/core')
@@ -92,6 +91,7 @@ const createLambda = async ({
   memory,
   timeout,
   runtime,
+  architectures,
   env,
   description,
   zipPath,
@@ -110,6 +110,7 @@ const createLambda = async ({
     Publish: true,
     Role: role.arn,
     Runtime: runtime,
+    Architectures:[...architectures],
     Timeout: timeout,
     Environment: {
       Variables: env
@@ -140,7 +141,7 @@ const updateLambdaConfig = async ({
   handler,
   memory,
   timeout,
-  runtime,
+  runtime, 
   env,
   description,
   role,
@@ -153,7 +154,7 @@ const updateLambdaConfig = async ({
     Handler: handler,
     MemorySize: memory,
     Role: role.arn,
-    Runtime: runtime,
+    Runtime: runtime,   
     Timeout: timeout,
     Environment: {
       Variables: env
@@ -170,10 +171,11 @@ const updateLambdaConfig = async ({
   return { arn: res.FunctionArn, hash: res.CodeSha256 }
 }
 
-const updateLambdaCode = async ({ lambda, name, zipPath, bucket }) => {
+const updateLambdaCode = async ({ lambda, name, zipPath, bucket, architectures }) => {
   const functionCodeParams = {
     FunctionName: name,
-    Publish: true
+    Publish: true,
+    Architectures:[...architectures]
   }
 
   if (bucket) {
@@ -200,6 +202,7 @@ const getLambda = async ({ lambda, name }) => {
       description: res.Description,
       timeout: res.Timeout,
       runtime: res.Runtime,
+      architectures: res.Architectures,
       role: {
         arn: res.Role
       },
@@ -247,7 +250,7 @@ const getPolicy = async ({ name, region, accountId }) => {
 }
 
 const configChanged = (prevLambda, lambda) => {
-  const keys = ['description', 'runtime', 'role', 'handler', 'memory', 'timeout', 'env', 'hash']
+  const keys = ['description', 'runtime','architectures','role', 'handler', 'memory', 'timeout', 'env', 'hash']
   const inputs = pick(keys, lambda)
   inputs.role = { arn: inputs.role.arn } // remove other inputs.role component outputs
   const prevInputs = pick(keys, prevLambda)

@@ -25,6 +25,7 @@ const outputsList = [
   'shims',
   'handler',
   'runtime',
+  'architectures',
   'env',
   'role',
   'layer',
@@ -41,12 +42,12 @@ const defaults = {
   shims: [],
   handler: 'handler.hello',
   runtime: 'nodejs18.x',
+  architectures:["arm64"],
   env: {},
   region: 'us-east-1',
   tracingConfig: {
     Mode: 'PassThrough'
   },
-
 }
 
 class AwsLambda extends Component {
@@ -54,7 +55,6 @@ class AwsLambda extends Component {
     this.context.status(`Deploying`);
 
     const config = mergeDeepRight(defaults, inputs)
-
     config.name = this.state.name || inputs.name || this.context.resourceId()
 
     this.context.debug(
@@ -87,53 +87,15 @@ class AwsLambda extends Component {
       config.role = { arn: outputsAwsIamRole.arn }
     }
 
-    if (
-      config.bucket &&
-      config.runtime === 'nodejs10.x' &&
-      (await utils.dirExists(path.join(config.code, 'node_modules')))
-    ) {
-      this.context.debug(`Bucket ${config.bucket} is provided for lambda ${config.name}.`)
+    this.context.status('Packaging')
+    this.context.debug(`Packaging lambda code from ${config.code}.`)
+    
+    config.zipPath = await pack(config.code, config.shims)
+    config.hash = await utils.hashFile(config.zipPath);  
 
-      const layer = await this.load('@serverless/aws-lambda-layer')
+    const prevLambda = await getLambda({ lambda, ...config })   
 
-      const layerInputs = {
-        description: `${config.name} Dependencies Layer`,
-        code: path.join(config.code, 'node_modules'),
-        runtimes: ['nodejs18.x'],
-        prefix: 'nodejs/node_modules',
-        bucket: config.bucket,
-        region: config.region
-      }
-
-      this.context.status('Deploying Dependencies')
-      this.context.debug(`Packaging lambda code from ${config.code}.`)
-      this.context.debug(`Uploading dependencies as a layer for lambda ${config.name}.`)
-
-      const promises = [pack(config.code, config.shims, false), layer(layerInputs)]
-      const res = await Promise.all(promises)
-      config.zipPath = res[0]
-      config.layer = res[1]
-    } else {
-      this.context.status('Packaging')
-      this.context.debug(`Packaging lambda code from ${config.code}.`)
-      config.zipPath = await pack(config.code, config.shims)
-    }
-
-    config.hash = await utils.hashFile(config.zipPath)
-
-    let deploymentBucket
-    if (config.bucket) {
-      deploymentBucket = await this.load('@serverless/aws-s3')
-    }
-
-    const prevLambda = await getLambda({ lambda, ...config })
-    this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)
-
-    if (!prevLambda) {
-      if (config.bucket) {
-        this.context.debug(`Uploading ${config.name} lambda package to bucket ${config.bucket}.`)   
-        await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
-      }
+    if (!prevLambda) {     
       this.context.debug(`Creating lambda ${config.name} in the ${config.region} region.`)
       const createResult = await createLambda({ lambda, ...config })
       config.arn = createResult.arn
@@ -142,17 +104,12 @@ class AwsLambda extends Component {
     } else {
       config.arn = prevLambda.arn
       if (configChanged(prevLambda, config)) {
-        if (config.bucket && prevLambda.hash !== config.hash) {
-          this.context.debug(`Uploading ${config.name} lambda code to bucket ${config.bucket}.`)
-          await deploymentBucket.upload({ name: config.bucket, file: config.zipPath })
-          await updateLambdaCode({ lambda, ...config })
-        } else if (!config.bucket && prevLambda.hash !== config.hash) {
+        if ((prevLambda.architectures[0] !== config.architectures[0]) || (!config.bucket && prevLambda.hash !== config.hash)) {
           this.context.debug(`Uploading ${config.name} lambda code.`)
           await updateLambdaCode({ lambda, ...config })
-        }
-        await waitUntilReady(lambda, this.context, config.name);
-        try{
-          this.context.status(`Updating`);
+          await waitUntilReady(lambda, this.context, config.name);
+        }       
+        try {      
           this.context.debug(`Updating ${config.name} lambda config.`);
           const updateResult = await updateLambdaConfig({ lambda, ...config });
           this.context.debug(`Lambda config for ${config.description} updated.`);
