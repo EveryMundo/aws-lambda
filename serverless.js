@@ -71,7 +71,9 @@ class AwsLambda extends Component {
 
     // If no role exists, create a default role
     let outputsAwsIamRole
+     console.log("DEBUG ROLE HERE", config.role)
     if (!config.role) {
+      console.log("DEBUG ROLE HERE not role defined", config.role)
       this.context.debug(`No role provided for lambda ${config.name}.`)
 
       outputsAwsIamRole = await awsIamRole({
@@ -84,6 +86,8 @@ class AwsLambda extends Component {
       config.role = { arn: outputsAwsIamRole.arn }
     } else {
       outputsAwsIamRole = await awsIamRole(config.role)
+      console.log("DEBUG ROLE HERE after awsIamRole(config.role)", config.role)
+      console.log("DEBUG ROLE HERE outputsAwsIamRole", outputsAwsIamRole)      
       config.role = { arn: outputsAwsIamRole.arn }
     }
 
