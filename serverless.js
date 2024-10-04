@@ -87,7 +87,7 @@ class AwsLambda extends Component {
     } else {
       outputsAwsIamRole = await awsIamRole(config.role)
       console.log("DEBUG ROLE HERE after awsIamRole(config.role)", config.role)
-      console.log("DEBUG ROLE HERE outputsAwsIamRole", outputsAwsIamRole)      
+      console.log("DEBUG ROLE HERE outputsAwsIamRole", JSON.stringify(outputsAwsIamRole))      
       config.role = { arn: outputsAwsIamRole.arn }
     }
 
