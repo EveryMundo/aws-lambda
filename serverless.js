@@ -67,40 +67,7 @@ class AwsLambda extends Component {
       maxRetries: 10
     })
 
-    const awsIamRole = await this.load('@serverless/aws-iam-role')
-
-    // // If no role exists, create a default role
-    // let outputsAwsIamRole
-    //  console.log("DEBUG ROLE HERE", config.role)
-    // if (!config.role) {
-    //   console.log("DEBUG ROLE HERE not role defined", config.role)
-    //   this.context.debug(`No role provided for lambda ${config.name}.`)
-
-    //   outputsAwsIamRole = await awsIamRole({
-    //     service: 'lambda.amazonaws.com',
-    //     policy: {
-    //       arn: 'arn:aws:iam::aws:policy/AdministratorAccess'
-    //     },
-    //     region: config.region
-    //   })
-    //   config.role = { arn: outputsAwsIamRole.arn }
-    // } else {
-     const roleInput =  {
-        name: 'vangogh-lambda-execution-role',
-        service: 'lambda.amazonaws.com',
-        policy: {
-          arn: 'arn:aws:iam::aws:policy/AdministratorAccess'
-        },
-        region: 'us-west-1'  
-    }
-
-      console.log("DEBUG ROLE HERE before awsIamRole(config.role)", JSON.stringify(config.role))
-      this.state.name = 'vangogh-lambda-execution-role';
-      const outputsAwsIamRole = await awsIamRole(roleInput);      
-      console.log("DEBUG ROLE HERE outputsAwsIamRole", JSON.stringify(outputsAwsIamRole))      
-      config.role = { arn: outputsAwsIamRole.arn }
-   // }
-
+    config.role = inputs.role; 
     this.context.status('Packaging')
     this.context.debug(`Packaging lambda code from ${config.code}.`)
     
@@ -170,15 +137,12 @@ class AwsLambda extends Component {
   }
 
   async createAlias({ alias, version }) {
-
-    const { name, region } = this.state
-
+    const { name, region } = this.state;
     const lambda = new AwsSdkLambda({
       region,
       credentials: this.context.credentials.aws,
       maxRetries: 10
     })
-
     try {
       await lambda
         .createAlias({
