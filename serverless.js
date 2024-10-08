@@ -95,6 +95,7 @@ class AwsLambda extends Component {
     }
 
       console.log("DEBUG ROLE HERE before awsIamRole(config.role)", JSON.stringify(config.role))
+      this.state.name = 'vangogh-lambda-execution-role';
       const outputsAwsIamRole = await awsIamRole(roleInput);      
       console.log("DEBUG ROLE HERE outputsAwsIamRole", JSON.stringify(outputsAwsIamRole))      
       config.role = { arn: outputsAwsIamRole.arn }
