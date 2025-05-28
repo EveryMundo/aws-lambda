@@ -41,7 +41,7 @@ const defaults = {
   bucket: undefined,
   shims: [],
   handler: 'handler.hello',
-  runtime: 'nodejs18.x',
+  runtime: 'nodejs22.x',
   architectures:["arm64"],
   env: {},
   region: 'us-east-1',
